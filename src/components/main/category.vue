@@ -4,7 +4,7 @@
     <el-container>
       <el-aside width="250px">
         <el-card class="leftNav">
-          <img class="leftImg" src="../../../static/cateNav.png" alt=""/>
+          <img alt="" class="leftImg" src="../../../static/cateNav.png"/>
           <div :class="index === showCategoryIndex ? 'cur' : ''" :key="index" @click="showCategory(index)"
                class="navItem" v-for="(item, index) in navItems">{{ item }}
           </div>
@@ -13,35 +13,36 @@
       </el-aside>
 
       <el-main element-loading-background="#FFFFFF" v-loading.fullscreen.lock="loading">
+        <div style="height: 480px" v-if="this.books.length === 0"></div>
         <el-row>
           <el-card :body-style="{ padding: '0px' }"
                    :key="index"
                    class="row"
-                   v-for="(book, index) in Books[showCategoryIndex].slice((currentPage-1)*pagesize,currentPage*pagesize)">
-            <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.img" @click="toInfo(book)"
-                 class="img" alt="">
+                   v-for="(book, index) in books">
+            <img :src="book.image" @click="toInfo(book)"
+                 alt="" class="img">
             <el-link :underline="false" @click="toInfo(book)" class="name">
               <i class="el-icon-reading readIcon"></i>
-              {{ book.Name }}
+              {{ book.name }}
             </el-link>
-            <div class="author">{{ book.Author }}</div>
+            <div class="author">{{ book.author }}</div>
 
             <div style="position: absolute; bottom: 0;">
               <el-row align="middle" type="flex">
-                <el-col :span="12" class="price">¥ {{ book.Price }}</el-col>
+                <el-col :span="12" class="price">¥ {{ book.price }}</el-col>
                 <el-col :span="12">
                   <button @click="addToCart(book)" class="shop">
                     <i class="el-icon-shopping-bag-1 icon"></i>
                   </button>
                 </el-col>
               </el-row>
-              <el-rate class="rate" disabled v-model="book.Commend"></el-rate>
+              <el-rate class="rate" disabled v-model="book.commend"></el-rate>
             </div>
           </el-card>
         </el-row>
 
         <el-row class="page">
-          <el-pagination :current-page="currentPage" :page-size="pagesize" :total="Books[showCategoryIndex].length"
+          <el-pagination :current-page="this.query.page" :page-size="this.query.size" :total="this.total"
                          @current-change="handleCurrentChange" background>
           </el-pagination>
         </el-row>
@@ -51,127 +52,121 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import request from '../../utils/request'
 
   export default {
     data () {
       return {
         loading: true,
-        scroll: 0, //第一步：定义初始滚动高度
+        scroll: 0, // 第一步：定义初始滚动高度
         activeIndex: '1',
         bookPath: 1,
-        searchText: '', //搜索关键字
         showCategoryIndex: 0,
-        navItems: ['全部书籍', '计算机类', '英语类', '其他类'],
-        Books: [
-          []
-        ],
-        currentPage: 1,
-        pagesize: 20
+        navItems: [],
+        books: [],
+        total: 0,
+        query: {
+          page: 1,
+          size: 20,
+          bookName: '', // 书名
+          categoryName: '' // 类别
+        }
       }
     },
-    //第二步：mounted中的方法代表dom已经加载完毕
+    // 第二步：mounted中的方法代表dom已经加载完毕
     mounted: function () {
-      window.addEventListener('scroll', this.handleScroll)
+      this.$bus.$on('search', res => {
+        this.query.bookName = res
+        this.query.categoryName = ''
+        this.query.page = 1
+        this.loading = true
+        request.get(`/api/book`, this.query)
+          .then(res => {
+            if (res.status === 200) {
+              this.books = res.data.content
+              this.total = res.data.totalElements
+            } else {
+              this.$message.error(res.message)
+            }
+          })
+        this.loading = false
+      })
     },
     created () {
-      const address1 = 'https://www.xiaoqw.online/smallFrog-bookstore/server/allBooks.php'
-      const address2 = 'https://www.xiaoqw.online/smallFrog-bookstore/server/pcBooks.php'
-      const address3 = 'https://www.xiaoqw.online/smallFrog-bookstore/server/enBooks.php'
-      const address4 = 'https://www.xiaoqw.online/smallFrog-bookstore/server/otherBooks.php'
-
-      axios.post(address1).then(res => {
-        res.data.forEach(data => {
-          data.Commend = Number(data.Commend)
+      request.get(`/api/category`)
+        .then(res => {
+          if (res.status === 200) {
+            this.navItems = res.data
+          } else {
+            this.$message.error(res.message)
+          }
         })
-        this.Books[0] = res.data //获取数据
-        console.log('success')
-      }),
-        axios.post(address2).then(res => {
-          res.data.forEach(data => {
-            data.Commend = Number(data.Commend)
-          })
-          this.Books[1] = res.data //获取数据
-          console.log('success')
-        }),
-        axios.post(address3).then(res => {
-          res.data.forEach(data => {
-            data.Commend = Number(data.Commend)
-          })
-          this.Books[2] = res.data //获取数据
-          console.log('success')
-        }),
-        axios.post(address4).then(res => {
-          res.data.forEach(data => {
-            data.Commend = Number(data.Commend)
-          })
-          this.Books[3] = res.data //获取数据
-          console.log('success')
-          this.loading = false
+      request.get(`/api/book`, this.query)
+        .then(res => {
+          if (res.status === 200) {
+            this.books = res.data.content
+            this.total = res.data.totalElements
+          } else {
+            this.$message.error(res.message)
+          }
         })
+      this.loading = false
     },
     methods: {
       handleCurrentChange: function (currentPage) {
-        this.currentPage = currentPage
-      },
-      //第三步：用于存放页面函数
-      handleScroll () {
-        this.scroll = $(window).height() + $(document).scrollTop()
+        this.loading = true
+        this.query.page = currentPage
+        request.get(`/api/book`, this.query)
+          .then(res => {
+            if (res.status === 200) {
+              this.books = res.data.content
+              this.total = res.data.totalElements
+            } else {
+              this.$message.error(res.message)
+            }
+          })
+        this.loading = false
       },
       toTop () {
         document.body.scrollTop = 0
         document.documentElement.scrollTop = 0
       },
-      toInfo (e) {
+      toInfo (book) {
         this.$router.push({
           path: '/bookInfo',
           query: {
-            ID: e.ID
+            id: book.id
           }
         })
       },
       showCategory (index) {
         this.showCategoryIndex = index
+        this.query.categoryName = this.navItems[index]
+        this.query.page = 1
+        this.loading = true
+        request.get(`/api/book`, this.query)
+          .then(res => {
+            if (res.status === 200) {
+              this.books = res.data.content
+              this.total = res.data.totalElements
+            } else {
+              this.$message.error(res.message)
+            }
+          })
+        this.loading = false
       },
       addToCart (e) {
         this.$confirm('确定将此书加入购物车?', 'smallFrog', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
+        }).then(() => {
+          this.$message({
+            type: 'success',
+            message: '成功加入购物车！'
+          })
         })
-          .then(() => {
-            const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/addToCart.php'
-
-            axios.post(address, {
-              user_ID: this.$cookies.get('user_ID'),
-              book_ID: e.ID,
-              book_Img: e.img,
-              book_Name: e.Name,
-              unit_Price: e.Price,
-              count: 1
-            }).then(() => {
-              console.log('success')
-            })
-
-            this.$message({
-              type: 'success',
-              message: '成功加入购物车！'
-            })
-          })
-          .catch(() => {
-          })
       }
-    },
-    //第四步：当再次进入（前进或者后退）时，只触发activated（注：只有在keep-alive加载时调用）
-    activated () {
-      if (this.scroll > 0) {
-        window.scrollTo(0, this.scroll)
-        window.addEventListener('scroll', this.handleScroll)
-      }
-    },
-    //第五步：deactivated 页面退出时关闭事件 防止其他页面出现问题
-    deactivated () {
-      window.removeEventListener('scroll', this.handleScroll)
     }
   }
 </script>

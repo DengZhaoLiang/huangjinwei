@@ -19,6 +19,7 @@
     "axios": "^0.19.2",
     "element-ui": "^2.13.0",
     "vue": "^2.5.2",
+    "vue-bus": "^1.2.1",
     "vue-cookies": "^1.7.0",
     "vue-router": "^3.0.1",
     "wowjs": "^1.1.3"

@@ -2,15 +2,15 @@
   <div>
     <el-row>
       <el-col :span="12">
-        <img class="loginImg" src="../../../static/left.jpg" alt="">
+        <img alt="" class="loginImg" src="../../../static/left.jpg">
       </el-col>
 
       <el-col :span="12">
-        <div class="title"><img class="head" src="../../../static/head1.gif" alt=""></div>
+        <div class="title"><img alt="" class="head" src="../../../static/head1.gif"></div>
         <el-form :model="ruleForm" :rules="rules" label-width="0" ref="ruleForm" status-icon>
           <div class="myInput username1">
             <el-form-item prop="tel">
-              <el-input class="search1 search2 search3" :clearable=true placeholder="请输入手机号"
+              <el-input :clearable=true class="search1 search2 search3" placeholder="请输入手机号"
                         prefix-icon="el-icon-user" v-model="ruleForm.tel"></el-input>
             </el-form-item>
           </div>
@@ -36,7 +36,8 @@
 </template>
 
 <script>
-  import axios from 'axios'
+
+  import request from '../../utils/request'
 
   export default {
     data () {
@@ -65,7 +66,7 @@
       return {
         ruleForm: {
           pass: '',
-          tel: '',
+          tel: ''
         },
         rules: {
           pass: [{
@@ -75,63 +76,41 @@
           tel: [{
             validator: checkTel,
             trigger: 'change'
-          }],
-        },
+          }]
+        }
       }
     },
     methods: {
       // 验证手机号
       checkMobile (str) {
         let re = /^1\d{10}$/
-        return re.test(str);
+        return re.test(str)
       },
       // <!--提交登录-->
       submitForm (formName) {
         this.$refs[formName].validate(valid => {
           if (valid) {
-            axios.post('https://www.xiaoqw.online/smallFrog-bookstore/server/login.php', {
-              username: this.ruleForm.tel,
+            request.post('/api/user/login', {
+              phone: this.ruleForm.tel,
               password: this.ruleForm.pass
-            }).then(response => { //用户名和密码将转为json传到后台接口
-              let res = response.data //用res承接返回后台的json文件(像使用数组那样)
-              console.log(res);
-              if (res.status === '0') { //显示登录结果
-                console.log('登录成功')
+            }).then(res => {
+              if (res.status === 200) {
+                console.log(res.data)
                 this.$message({
                   showClose: true,
                   message: '登录成功！',
                   type: 'success',
                   center: true
                 })
-
-                this.$cookies.set('status', 'logined')
-                this.$cookies.set('user_ID', res.ID)
-                this.$cookies.set('Avatar', res.Avatar)
+                this.$cookies.set('userInfo', res.data)
 
                 this.$router.push({
                   path: '/home'
                 })
-              } else if (res.status === '0') {
-                console.log('账号或密码错误！')
-                this.$message({
-                  showClose: true,
-                  message: '账号或密码错误！',
-                  type: 'error',
-                  center: true
-                })
               } else {
-                console.log('登录失败')
-                this.$message({
-                  showClose: true,
-                  message: '登录失败！请稍后重试！',
-                  type: 'error',
-                  center: true
-                })
+                this.$message.error(res.message)
               }
             })
-          } else {
-            console.log('账号或密码错误！')
-            return false
           }
         })
       },

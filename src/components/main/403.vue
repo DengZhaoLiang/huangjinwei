@@ -1,6 +1,6 @@
 <template>
   <div class="errorPage">
-    <img class="errorImg" src="../../../static/403.jpg" alt="">
+    <img alt="" class="errorImg" src="../../../static/403.jpg">
     <div class="errorDesc">暂无权限访问该页面!</div>
     <div class="errorHandle">
       <router-link to="/">

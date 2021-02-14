@@ -7,10 +7,11 @@ import App from './App'
 import router from './router'
 import axios from 'axios'
 import VueCookies from 'vue-cookies'
-
+import bus from 'vue-bus'
 
 Vue.use(VueCookies)
 Vue.use(ElementUI)
+Vue.use(bus)
 Vue.prototype.$axios = axios
 
 Vue.config.productionTip = false

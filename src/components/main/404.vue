@@ -1,6 +1,6 @@
 <template>
   <div class="errorPage">
-    <img class="errorImg" src="../../../static/404.jpg" alt="">
+    <img alt="" class="errorImg" src="../../../static/404.jpg">
     <div class="errorDesc">您访问的页面不存在!</div>
     <div class="errorHandle">
       <router-link to="/">

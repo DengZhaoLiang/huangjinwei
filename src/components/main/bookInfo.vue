@@ -5,27 +5,27 @@
     </div>
     <div class="bookInfo" v-loading="loading">
       <el-card class="box-card leftInfo">
-        <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + this.bookInfo.img" style="height: 310px;" alt="">
+        <img :src="bookInfo.image" alt="" style="height: 310px;">
         <div style="display: flex; margin-top: 20px; align-items: center;">
           <div style="color: #606266;">推荐程度：</div>
-          <el-rate :colors="colors" disabled style="margin-top: 4px;" v-model="bookInfo.Commend"></el-rate>
+          <el-rate disabled style="margin-top: 4px;" v-model="bookInfo.commend"></el-rate>
         </div>
       </el-card>
       <div class="rightInfo" style="position: relative;">
-        <div class="bookName">{{ bookInfo.Name }}</div>
-        <div class="authorName">{{ bookInfo.Author }} / {{ bookInfo.Publish_name }}</div>
+        <div class="bookName">{{ bookInfo.name }}</div>
+        <div class="authorName">{{ bookInfo.author }}</div>
         <div style="display: flex; margin-top: 50px; align-items: center;">
           <div style="color: #606266;">售价：</div>
-          <div class="bookPrice">¥ {{ bookInfo.Price }}</div>
+          <div class="bookPrice">¥ {{ bookInfo.price }}</div>
         </div>
         <div style="display: flex; margin-top: 50px; align-items: flex-end;">
           <div style="color: #606266;">库存数量：</div>
-          <div>{{ bookInfo.Book_Num }}</div>
+          <div>{{ bookInfo.inventory }}</div>
         </div>
         <div style="position: absolute; bottom: 0;">
           <div style="display: flex; align-items: center;">
             <div style="color: #606266;">数量：</div>
-            <el-input-number :max="bookInfo.Book_Num" :min="1" @change="handleChange" v-model="num"></el-input-number>
+            <el-input-number :max="bookInfo.inventory" :min="1" v-model="num"></el-input-number>
           </div>
           <div style="display: flex; margin-top: 40px;">
             <el-button @click="addToCart(bookInfo)" class="buyButton1">加入购物车</el-button>
@@ -38,13 +38,13 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import request from '../../utils/request'
 
   export default {
     data () {
       return {
         loading: true,
-        bookInfo: [],
+        bookInfo: {},
         num: 1,
         cart: [[]]
       }
@@ -54,41 +54,22 @@
     },
     methods: {
       getInfo () {
-        const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/bookInfo.php'
-
-        axios.post(address, {
-          ID: this.$route.query.ID
-        }).then(res => {
-          this.bookInfo = res.data //获取数据
-          console.log('success')
-          console.log(this.bookInfo)
-        })
+        request.get(`/api/book/${this.$route.query.id}`)
+          .then(res => {
+            if (res.status === 200) {
+              this.bookInfo = res.data
+            } else {
+              this.$message.error(res.message)
+            }
+          })
         this.loading = false
-      },
-      handleChange (value) {
-        console.log(value)
       },
       goBack () {
         this.$router.go(-1)
       },
-      addToCart (e) {
-        var address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/addToCart.php'
+      addToCart (book) {
+        if (this.$cookies.get('userInfo')) {
 
-        if (this.$cookies.get('status') === 'logined') {
-          axios.post(address, {
-            user_ID: this.$cookies.get('user_ID'),
-            book_ID: e.ID,
-            book_Img: e.img,
-            book_Name: e.Name,
-            unit_Price: e.Price,
-            count: this.num
-          }).then(res => {
-            console.log('success')
-            this.$message({
-              type: 'success',
-              message: '成功加入购物车！'
-            })
-          })
         } else {
           this.$confirm('您尚未登录！', 'smallFrog', {
             confirmButtonText: '去登陆',
@@ -102,15 +83,15 @@
         }
       },
       setCart () {
-        this.cart[0]['user_ID'] = this.$cookies.get('user_ID')
-        this.cart[0]['book_ID'] = this.bookInfo.ID
-        this.cart[0]['book_Name'] = this.bookInfo.Name
-        this.cart[0]['book_Img'] = this.bookInfo.img
-        this.cart[0]['unit_Price'] = this.bookInfo.Price
+        this.cart[0]['userId'] = this.$cookies.get('userInfo').id
+        this.cart[0]['bookId'] = this.bookInfo.id
+        this.cart[0]['bookName'] = this.bookInfo.name
+        this.cart[0]['bookImage'] = this.bookInfo.image
+        this.cart[0]['bookPrice'] = this.bookInfo.price
         this.cart[0]['count'] = this.num
       },
       toSettle () {
-        if (this.$cookies.get('status') === 'logined') {
+        if (this.$cookies.get('userInfo')) {
           this.setCart()
 
           this.$router.push({

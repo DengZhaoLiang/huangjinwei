@@ -2,7 +2,7 @@
   <div>
     <el-row align="middle" type="flex">
       <el-col :span="4">
-        <img class="bannerLogo" src="../../../static/shoppingCart.jpg" alt="">
+        <img alt="" class="bannerLogo" src="../../../static/shoppingCart.jpg">
       </el-col>
       <el-col :span="20">
         <div class="banner">
@@ -27,7 +27,7 @@
         <div :key="index" v-for="(book, index) in cart">
           <el-row align="middle" type="flex">
             <el-col :span="3" class="bookRow">
-              <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.book_Img" class="bookImg" alt="">
+              <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.book_Img" alt="" class="bookImg">
             </el-col>
             <el-col :span="9" class="bookRow">{{ book.book_Name }}</el-col>
             <el-col :span="3" class="bookRow">{{ book.unit_Price }}</el-col>
@@ -101,13 +101,13 @@
       }
     },
     created () {
-      var address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/userCart.php'
-      var user_ID = this.$cookies.get('user_ID')
-      var count = 0
-      var totalPrice = 0
+      const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/userCart.php'
+      const userId = this.$cookies.get('userInfo').id
+      let count = 0
+      let totalPrice = 0
 
-      axios.post(address, user_ID).then(res => {
-        this.cart = res.data //获取数据
+      axios.post(address, userId).then(res => {
+        this.cart = res.data // 获取数据
         console.log('success')
         console.log(this.cart)
 

@@ -2,15 +2,15 @@
   <div>
     <el-row>
       <el-col :span="12">
-        <img class="regImg" src="../../../static/left.jpg" alt="">
+        <img alt="" class="regImg" src="../../../static/left.jpg">
       </el-col>
 
       <el-col :span="12">
-        <div class="title"><img class="head" src="../../../static/head2.gif" alt=""></div>
+        <div class="title"><img alt="" class="head" src="../../../static/head2.gif"></div>
         <el-form :model="ruleForm" :rules="rules" class="demo-ruleForm" label-width="0" ref="ruleForm" status-icon>
           <div class="myInput username2">
             <el-form-item prop="tel">
-              <el-input class="search1 search2 search3" clearable="true" placeholder="请输入手机号"
+              <el-input :clearable=true class="search1 search2 search3" placeholder="请输入手机号"
                         prefix-icon="el-icon-user" v-model="ruleForm.tel"></el-input>
             </el-form-item>
           </div>
@@ -42,7 +42,7 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import request from '../../utils/request'
 
   export default {
     data () {
@@ -81,7 +81,7 @@
         ruleForm: {
           pass: '',
           checkPass: '',
-          tel: '',
+          tel: ''
         },
         rules: {
           pass: [{
@@ -95,27 +95,25 @@
           tel: [{
             validator: checkTel,
             trigger: 'change'
-          }],
-        },
+          }]
+        }
       }
     },
     methods: {
       // 验证手机号
       checkMobile (str) {
         let re = /^1\d{10}$/
-        return re.test(str);
+        return re.test(str)
       },
       // <!--提交注册-->
       submitForm (formName) {
         this.$refs[formName].validate(valid => {
           if (valid) {
-            axios.post('https://www.xiaoqw.online/smallFrog-bookstore/server/register.php', {
-              username: this.ruleForm.tel,
+            request.post('/api/user/register', {
+              phone: this.ruleForm.tel,
               password: this.ruleForm.pass
-            }).then(response => { //用户名和密码将转为json传到后台接口
-              let res = response.data //用res承接返回后台的json文件(像使用数组那样)
-              if (res.status === '1') { //显示登录结果
-                console.log('注册成功')
+            }).then(res => { // 用户名和密码将转为json传到后台接口
+              if (res.status === 200) {
                 this.$message({
                   showClose: true,
                   message: '注册成功！',
@@ -125,22 +123,6 @@
 
                 this.$router.push({
                   path: '/login'
-                })
-              } else if (res.status === '0') { //显示登录结果
-                console.log('账户名已被使用！')
-                this.$message({
-                  showClose: true,
-                  message: '账户名已被使用！',
-                  type: 'error',
-                  center: true
-                })
-              } else {
-                console.log('注册失败')
-                this.$message({
-                  showClose: true,
-                  message: '注册失败！请稍后重试！',
-                  type: 'error',
-                  center: true
                 })
               }
             })

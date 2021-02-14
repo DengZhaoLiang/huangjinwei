@@ -8,7 +8,7 @@
           <el-button @click="toCate()" class="startBtn">SHOPPING</el-button>
         </div>
         <div>
-          <img class="indexImg" src="../../../static/background.png" alt="">
+          <img alt="" class="indexImg" src="../../../static/background.png">
         </div>
       </div>
     </el-container>
@@ -18,13 +18,13 @@
       <div :key="index" class="recLine" data-wow-duration="2s" v-for="(books, index) in transRecBooks">
         <div :key="index" v-for="(book, index) in books">
           <el-card :body-style="{ padding: '0px' }" class="wow slideInUp card" slot="reference">
-            <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.img" @click="toInfo(book)" class="img" alt="">
+            <img :src="book.image" @click="toInfo(book)" alt="" class="img">
             <div class="mask">
               <el-link :underline="false" @click="toInfo(book)" class="name">
                 <i class="el-icon-reading readIcon"></i>
-                {{ book.Name }}
+                {{ book.name }}
               </el-link>
-              <el-rate class="rate" disabled v-model.number='book.Commend'></el-rate>
+              <el-rate class="rate" disabled v-model.number='book.commend'></el-rate>
             </div>
 
           </el-card>
@@ -35,7 +35,7 @@
 </template>
 
 <script>
-  import axios from 'axios'
+  import request from '../../utils/request'
 
   export default {
     data () {
@@ -45,18 +45,14 @@
       }
     },
     created () {
-      const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/recommend.php'
-
-      axios.post(address).then(res => {
-        //这里是ES6的写法，get请求的地址
-        res.data.forEach(data => {
-          data.Commend = Number(data.Commend)
+      request.get('/api/book/recommend')
+        .then(res => {
+          if (res.status === 200) {
+            console.log(res.data)
+            this.recBooks = res.data // 获取数据
+            this.transRec()
+          }
         })
-        this.recBooks = res.data //获取数据
-        console.log('success')
-        console.log(this.recBooks)
-        this.transRec()
-      })
     },
     methods: {
       transRec () {
@@ -70,17 +66,17 @@
         }
         this.transRecBooks = Arr
       },
-      toInfo (e) {
+      toInfo (book) {
         this.$router.push({
           path: '/bookInfo',
           query: {
-            ID: e.ID
+            id: book.id
           }
         })
       },
       toCate () {
         this.$router.push({
-          path: '/category',
+          path: '/category'
         })
       }
     }

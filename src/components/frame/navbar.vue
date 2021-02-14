@@ -3,29 +3,31 @@
     <el-header>
       <el-row align="middle" class="nav" type="flex">
         <el-col :lg="5" :md="5" :sm="2" :xs="0" class="box hidden-xs-only"><img @click="toHome()"
+                                                                                alt=""
                                                                                 class="image"
-                                                                                src="../../../static/logo.png" alt=""></el-col>
+                                                                                src="../../../static/logo.png">
+        </el-col>
         <el-col :lg="8" :md="10" :sm="13" :xs="16">
-          <el-menu :default-active="$route.path" active-text-color="#4F6E9D" mode="horizontal" :router=true>
+          <el-menu :default-active="$route.path" :router=true active-text-color="#4F6E9D" mode="horizontal">
             <el-menu-item index="/home">首页</el-menu-item>
             <el-menu-item index="/category">书籍分类</el-menu-item>
           </el-menu>
         </el-col>
         <el-col :lg="4" :md="2" :sm="2" :xs="0" class="box hidden-md-and-down">
-          <el-input @confirm="toSearch()" active-text-color="#4F6E9D" class="search1 search2 search3"
+          <el-input @keyup.enter.native="toSearch()" active-text-color="#4F6E9D" class="search1 search2 search3"
                     placeholder="输入书名搜索书籍"
                     prefix-icon="el-icon-search" size="small" v-model="input">
           </el-input>
         </el-col>
 
         <el-col :lg="3" :md="2" :sm="3" :xs="0" class="box hidden-xs-only">
-          <div v-if="this.$cookies.get('status') === 'unlogin' || !this.$cookies.get('status')">
+          <div v-if="!this.$cookies.get('userInfo')">
             <el-button @click="toLogin()" circle class="myButton el-icon-user"></el-button>
           </div>
 
-          <div v-if="this.$cookies.get('status') === 'logined'">
+          <div v-if="this.$cookies.get('userInfo')">
             <el-dropdown>
-              <el-avatar :src="this.$cookies.get('Avatar')" @error="errorHandler"></el-avatar>
+              <el-avatar :src="this.$cookies.get('userInfo').avatar" @error="errorHandler"></el-avatar>
 
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item icon="el-icon-setting"><label @click="setting()">个人中心</label></el-dropdown-item>
@@ -59,15 +61,15 @@
       <el-row>
         <el-col :span="10" style="text-align: center;">
           <div class="logo">
-            <img class="favicon" src="../../../static/favicon.png" alt="">
+            <img alt="" class="favicon" src="../../../static/favicon.png">
             SMALLFROG
           </div>
           <p class="description">What books are you looking for? SMALLFROG is a bookstore for book lovers to read and
             buy the books they are fond of.</p>
           <div style="display: inline-block;">
-            <img class="socialImg" src="../../../static/social-facebook.png" alt="">
-            <img class="socialImg" src="../../../static/social-instagram.png" alt="">
-            <img class="socialImg" src="../../../static/social-twitter.png" alt="">
+            <img alt="" class="socialImg" src="../../../static/social-facebook.png">
+            <img alt="" class="socialImg" src="../../../static/social-instagram.png">
+            <img alt="" class="socialImg" src="../../../static/social-twitter.png">
           </div>
         </el-col>
         <el-col :span="14">
@@ -107,7 +109,12 @@
     },
     methods: {
       toSearch () {
-
+        if (this.$route.path !== '/category') {
+          this.$router.push({
+            path: '/category'
+          })
+        }
+        this.$bus.$emit('search', this.input)
       },
       toLogin () {
         this.$router.push({
@@ -120,7 +127,7 @@
         })
       },
       toCart () {
-        if (this.$cookies.get('status') === 'logined') {
+        if (this.$cookies.get('userInfo')) {
           this.$router.push({
             path: '/shopping/cart'
           })
@@ -137,7 +144,7 @@
         }
       },
       toOrder () {
-        if (this.$cookies.get('status') === 'logined') {
+        if (this.$cookies.get('userInfo')) {
           this.$router.push({
             path: '/order'
           })
@@ -159,9 +166,7 @@
         })
       },
       exit () {
-        this.$cookies.set('status', 'unlogin')
-        this.$cookies.remove('user_ID')
-        this.$cookies.remove('Avatar')
+        this.$cookies.remove('userInfo')
         this.reload()
       },
       errorHandler () {
@@ -181,6 +186,7 @@
     position: fixed;
     z-index: 999;
   }
+
   .nav .box {
     background-color: #FFFFFF;
     text-align: center;

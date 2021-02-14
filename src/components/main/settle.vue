@@ -38,7 +38,7 @@
           <div :key="index" class="commodity" v-for="(book, index) in cart">
             <el-row align="middle" type="flex">
               <el-col :span="3">
-                <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.book_Img" class="bookImg" alt="">
+                <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.book_Img" alt="" class="bookImg">
               </el-col>
               <el-col :span="9">{{ book.book_Name }}</el-col>
               <el-col :span="6">{{ book.unit_Price }}</el-col>
@@ -59,7 +59,7 @@
           <el-divider></el-divider>
 
           <div class="settleFooter">
-            <div class="leftImg"><img class="settleImg" src="../../../static/orderConfirm.png" alt=""></div>
+            <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
               <div class="postage">商品总额：{{ totalPrice }} 元</div>
               <div class="postage">运费：{{ postage }} 元</div>
@@ -83,7 +83,7 @@
           <el-divider></el-divider>
 
           <div class="settleFooter">
-            <div class="leftImg"><img class="settleImg" src="../../../static/orderConfirm.png" alt=""></div>
+            <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
               <div class="postage">商品总额：0 元</div>
               <div class="postage">运费：0 元</div>
@@ -129,12 +129,12 @@
         cart: [],
         count: 0,
         totalPrice: 0,
-        editVisible: false,
+        editVisible: false
       }
     },
     created () {
-      var address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/settleUserInfo.php'
-      var user_ID = this.$cookies.get('user_ID')
+      const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/settleUserInfo.php'
+      const userId = this.$cookies.get('userInfo').id
       let count = 0
       let totalPrice = 0
 
@@ -147,8 +147,8 @@
       this.count = count
       this.totalPrice = totalPrice
 
-      axios.post(address, user_ID).then(res => {
-        this.userInfo = res.data //获取数据
+      axios.post(address, userId).then(res => {
+        this.userInfo = res.data // 获取数据
         console.log('success')
         console.log(this.userInfo)
       })
