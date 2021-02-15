@@ -46,7 +46,7 @@
         loading: true,
         bookInfo: {},
         num: 1,
-        cart: [[]]
+        good: {}
       }
     },
     created () {
@@ -69,7 +69,22 @@
       },
       addToCart (book) {
         if (this.$cookies.get('userInfo')) {
-
+          let carts = this.$cookies.get('carts') ? JSON.parse(this.$cookies.get('carts')) : []
+          let append = true
+          carts.forEach(cart => {
+            if (cart.book.id === book.id) {
+              cart.purchaseNum += this.num
+              append = false
+            }
+          })
+          if (append) {
+            carts.push({
+              book: this.bookInfo,
+              purchaseNum: this.num
+            })
+          }
+          this.$cookies.set('carts', JSON.stringify(carts))
+          this.$message.success('加入购物车成功')
         } else {
           this.$confirm('您尚未登录！', 'smallFrog', {
             confirmButtonText: '去登陆',
@@ -82,23 +97,15 @@
           })
         }
       },
-      setCart () {
-        this.cart[0]['userId'] = this.$cookies.get('userInfo').id
-        this.cart[0]['bookId'] = this.bookInfo.id
-        this.cart[0]['bookName'] = this.bookInfo.name
-        this.cart[0]['bookImage'] = this.bookInfo.image
-        this.cart[0]['bookPrice'] = this.bookInfo.price
-        this.cart[0]['count'] = this.num
-      },
       toSettle () {
         if (this.$cookies.get('userInfo')) {
-          this.setCart()
+          this.$cookies.set('buyNow', JSON.stringify({
+            book: this.bookInfo,
+            purchaseNum: this.num
+          }))
 
           this.$router.push({
-            path: '/shopping/settle',
-            query: {
-              cart: this.cart
-            }
+            path: '/shopping/settle'
           })
         } else {
           this.$confirm('您尚未登录！', 'smallFrog', {

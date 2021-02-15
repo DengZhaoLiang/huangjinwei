@@ -24,12 +24,7 @@ Vue.config.productionTip = false
 
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title + ' - smallFrog 书城'
-  const role = VueCookies.get('user_ID')
-  if (to.meta.permission && !role && (to.path == '/shopping/cart' || to.path == '/shopping/settle' || to.path == '/shopping/pay' || to.path == '/order' || to.path == '/setting')) {
-    next('/403')
-  } else {
-    next()
-  }
+  next()
 })
 
 /* eslint-disable no-new */

@@ -10,22 +10,25 @@
 
         <el-row align="middle" type="flex">
           <el-col :span="4">
-            <el-button @click="goBack()" class="back" icon="el-icon-caret-left">上一步</el-button>
+            <el-button @click="goBack(-1)" class="back" icon="el-icon-caret-left">上一步</el-button>
           </el-col>
           <el-col :span="20">
-            <el-steps :active="1" finish-status="success" simple>
+            <el-steps :active="step" finish-status="success" simple>
               <el-step @click="toCart()" icon="el-icon-s-goods" title="购物车"></el-step>
-              <el-step icon="el-icon-s-claim" title="下单"></el-step>
+              <el-step icon="el-icon-s-claim" title="收货地址"></el-step>
               <el-step icon="el-icon-s-finance" title="付款"></el-step>
               <el-step icon="el-icon-s-home" title="出库"></el-step>
               <el-step icon="el-icon-success" title="成功交易"></el-step>
             </el-steps>
           </el-col>
+          <el-col :span="4" style="margin-left: 50px">
+            <el-button @click="goBack(1)" class="back" icon="el-icon-caret-right">下一步</el-button>
+          </el-col>
         </el-row>
 
         <el-divider></el-divider>
 
-        <div class="commodity">
+        <div class="commodity" v-if="step === 0">
           <el-row align="middle" type="flex">
             <el-col :span="3" class="cTitle">商品图片</el-col>
             <el-col :span="9" class="cTitle">商品名称</el-col>
@@ -34,27 +37,16 @@
           </el-row>
         </div>
 
-        <div v-if="this.cart[0]">
-          <div :key="index" class="commodity" v-for="(book, index) in cart">
+        <div v-if="this.carts.length !== 0 && step === 0">
+          <div :key="index" class="commodity" v-for="(cart, index) in carts">
             <el-row align="middle" type="flex">
               <el-col :span="3">
-                <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.book_Img" alt="" class="bookImg">
+                <img :src="cart.book.image" alt="" class="bookImg">
               </el-col>
-              <el-col :span="9">{{ book.book_Name }}</el-col>
-              <el-col :span="6">{{ book.unit_Price }}</el-col>
-              <el-col :span="6">{{ book.count }}</el-col>
+              <el-col :span="9">{{ cart.book.name }}</el-col>
+              <el-col :span="6">{{ cart.book.price }}</el-col>
+              <el-col :span="6">{{ cart.purchaseNum }}</el-col>
             </el-row>
-          </div>
-          <el-divider></el-divider>
-
-          <div class="orderInfo">
-            <div class="left">
-              <div class="infoTitle">收货信息</div>
-              <div class="info">名字：{{ userInfo.Logname }}</div>
-              <div class="info">电话：{{ userInfo.Phone }}</div>
-              <div class="info">地址：{{ userInfo.Address }}</div>
-            </div>
-            <el-button @click="handleEdit()" class="modify" plain type="info">修改</el-button>
           </div>
           <el-divider></el-divider>
 
@@ -62,23 +54,41 @@
             <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
               <div class="postage">商品总额：{{ totalPrice }} 元</div>
-              <div class="postage">运费：{{ postage }} 元</div>
-              <div class="payPrice">应付金额：{{ totalPrice + postage }} 元</div>
+              <div class="postage">运费：包邮</div>
+              <div class="payPrice">应付金额：{{ totalPrice }} 元</div>
             </div>
           </div>
         </div>
 
-        <div v-if="!this.cart[0]">
+        <div style="height: 335px" v-if="address.length !== 0 && step === 1">
+          <div class="left">
+            <template>
+              <el-table :data="address" style="width: 100%">
+                <el-table-column label="选项" width="160">
+                  <template slot-scope="scope">
+                    <el-radio :label="scope.$index" @change.native="getCurrentRow(scope.$index)" v-model="radio">
+                      &nbsp;
+                    </el-radio>
+                  </template>
+                </el-table-column>
+                <el-table-column label="姓名" prop="name" width="160"></el-table-column>
+                <el-table-column label="电话" prop="phone" width="160"></el-table-column>
+                <el-table-column label="地址" prop="detail"></el-table-column>
+              </el-table>
+            </template>
+          </div>
+        </div>
+
+        <div v-if="this.carts.length === 0 && step === 1">
           <el-row align="middle" type="flex">
             <el-col :span="24" style="text-align: center;">暂无商品</el-col>
           </el-row>
           <el-divider></el-divider>
 
-          <div class="orderInfo">
+          <div class="orderInfo" style="height: 335px" v-if="address.length === 0 && step === 1">
             <div class="left">
-              <div class="infoTitle">收货信息：无</div>
+              <div class="infoTitle">收货地址：无</div>
             </div>
-            <el-button @click="modify()" class="modify" plain type="info">修改</el-button>
           </div>
           <el-divider></el-divider>
 
@@ -86,7 +96,7 @@
             <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
               <div class="postage">商品总额：0 元</div>
-              <div class="postage">运费：0 元</div>
+              <div class="postage">运费：包邮</div>
               <div class="payPrice">应付金额：0 元</div>
             </div>
           </div>
@@ -95,7 +105,7 @@
 
       <!-- 收货信息编辑弹出框 -->
       <el-dialog :visible.sync="editVisible" title="修改收货信息" width="35%">
-        <el-form :model="userInfo" :rules="rules" label-position="left" label-width="100px" ref="userInfo">
+        <el-form :model="userInfo" label-position="left" label-width="100px" ref="userInfo">
           <el-form-item label="名字" prop="Logname">
             <el-input v-model.number="userInfo.Logname"></el-input>
           </el-form-item>
@@ -117,7 +127,8 @@
 </template>
 
 <script>
-  import axios from 'axios'
+
+  import request from '../../utils/request'
 
   export default {
     inject: ['reload'],
@@ -125,46 +136,66 @@
       return {
         input: '',
         userInfo: [],
-        postage: 0,
-        cart: [],
+        carts: [],
         count: 0,
         totalPrice: 0,
-        editVisible: false
+        editVisible: false,
+        step: 0,
+        address: [],
+        radio: false,
+        addressId: ''
       }
     },
     created () {
-      const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/settleUserInfo.php'
-      const userId = this.$cookies.get('userInfo').id
-      let count = 0
-      let totalPrice = 0
-
-      this.cart = this.$route.query.cart
-
-      for (let i = 0; i < this.cart.length; i++) {
-        count += parseFloat(this.cart[i].count)
-        totalPrice += parseFloat(this.cart[i].unit_Price * this.cart[i].count)
+      /** 获取用户信息 */
+      this.userInfo = this.$cookies.get('userInfo')
+      let buy = this.$cookies.get('buyNow')
+      if (buy) {
+        this.carts.push(buy)
       }
-      this.count = count
-      this.totalPrice = totalPrice
+      console.log(this.carts)
 
-      axios.post(address, userId).then(res => {
-        this.userInfo = res.data // 获取数据
-        console.log('success')
-        console.log(this.userInfo)
+      // 计算应付金额
+      let total = 0
+      this.carts.forEach(cart => {
+        total += cart.book.price * cart.purchaseNum
       })
+      this.totalPrice = total
     },
     methods: {
-      goBack () {
-        this.$router.go(-1)
+      goBack (num) {
+        let to = this.step + num
+        // 如果是选择地址
+        if (to === 1) {
+          // 校验购物车
+          if (this.carts.length === 0) {
+            this.$message.error('没有选择商品')
+            return
+          }
+          request.get(`/api/address/user/${this.userInfo.id}`)
+            .then(res => {
+              if (res.status === 200) {
+                this.address = res.data
+              } else {
+                this.$message.error(res.message)
+              }
+            })
+        }
+        // 如果是付款
+        if (to === 2) {
+          if (this.addressId === '') {
+            this.$message.error('请先选择地址')
+            return
+          }
+        }
+        if (to >= 0 && to < 3) {
+          this.step = to
+        }
       },
       toCart () {
         this.$router.push({
           path: '/shopping/cart'
         })
-      },
-      // 编辑操作
-      handleEdit () {
-        this.editVisible = true
       },
       modify (formName) {
         this.$refs[formName].validate((valid) => {
@@ -184,7 +215,7 @@
         })
       },
       toPay (e) {
-        if (!this.cart[0]) {
+        if (this.carts.length === 0) {
           this.$message({
             showClose: true,
             message: '无订单信息！',
@@ -197,11 +228,13 @@
             query: {
               User_name: e.ID,
               User_tel: e.Phone,
-              User_address: e.Address,
-              cart: this.cart
+              User_address: e.Address
             }
           })
         }
+      },
+      getCurrentRow (num) {
+        this.addressId = this.address[num].id
       }
     }
   }
