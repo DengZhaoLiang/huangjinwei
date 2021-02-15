@@ -4,7 +4,6 @@
       <div class="viewBox">
         <div class="title">
           <div class="slogan">填写并核对订单信息</div>
-          <el-button @click="toPay(userInfo)" class="submit" type="danger">提交订单</el-button>
         </div>
         <el-divider></el-divider>
 
@@ -17,8 +16,7 @@
               <el-step @click="toCart()" icon="el-icon-s-goods" title="购物车"></el-step>
               <el-step icon="el-icon-s-claim" title="收货地址"></el-step>
               <el-step icon="el-icon-s-finance" title="付款"></el-step>
-              <el-step icon="el-icon-s-home" title="出库"></el-step>
-              <el-step icon="el-icon-success" title="成功交易"></el-step>
+              <el-step icon="el-icon-s-home" title="订单状态"></el-step>
             </el-steps>
           </el-col>
           <el-col :span="4" style="margin-left: 50px">
@@ -85,13 +83,6 @@
           </el-row>
           <el-divider></el-divider>
 
-          <div class="orderInfo" style="height: 335px" v-if="address.length === 0 && step === 1">
-            <div class="left">
-              <div class="infoTitle">收货地址：无</div>
-            </div>
-          </div>
-          <el-divider></el-divider>
-
           <div class="settleFooter">
             <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
@@ -101,27 +92,22 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 收货信息编辑弹出框 -->
-      <el-dialog :visible.sync="editVisible" title="修改收货信息" width="35%">
-        <el-form :model="userInfo" label-position="left" label-width="100px" ref="userInfo">
-          <el-form-item label="名字" prop="Logname">
-            <el-input v-model.number="userInfo.Logname"></el-input>
-          </el-form-item>
-          <el-form-item label="电话" prop="Phone">
-            <el-input v-model.number="userInfo.Phone"></el-input>
-          </el-form-item>
-          <el-form-item label="收货地址" prop="Address">
-            <el-input type="textarea" v-model="userInfo.Address"></el-input>
-          </el-form-item>
-        </el-form>
-
-        <div class="dialog-footer" slot="footer">
-          <el-button @click="modify('userInfo')" plain type="primary">修改</el-button>
-          <el-button @click="editVisible = false" plain type="danger">取消</el-button>
+        <div class="orderInfo" style="height: 335px" v-if="address.length === 0 && step === 1">
+          <div class="left">
+            <div class="infoTitle">收货地址：无</div>
+          </div>
         </div>
-      </el-dialog>
+
+        <div v-if="step === 2">
+          <div ref="alipay" v-html="alipayWap" v-show="false"></div>
+        </div>
+
+        <div v-if="step === 4">
+          <c-order-success :is-payed='isPayed' :order-id='orderSn' :total-amount='totalPrice'/>
+        </div>
+
+      </div>
     </div>
   </div>
 </template>
@@ -129,8 +115,10 @@
 <script>
 
   import request from '../../utils/request'
+  import COrderSuccess from './c-order-success'
 
   export default {
+    components: {COrderSuccess},
     inject: ['reload'],
     data () {
       return {
@@ -143,7 +131,10 @@
         step: 0,
         address: [],
         radio: false,
-        addressId: ''
+        addressId: '',
+        alipayWap: '',
+        orderSn: '',
+        isPayed: false
       }
     },
     created () {
@@ -165,6 +156,19 @@
     methods: {
       goBack (num) {
         let to = this.step + num
+        // 如果已付款
+        if (this.orderSn !== '') {
+          request.post(`/api/order/payed/${this.orderSn}`)
+            .then(res => {
+              if (res.status === 200) {
+                if (res.data === true) {
+                  this.step = 4
+                }
+              } else {
+                this.$message.error(res.message)
+              }
+            })
+        }
         // 如果是选择地址
         if (to === 1) {
           // 校验购物车
@@ -187,8 +191,37 @@
             this.$message.error('请先选择地址')
             return
           }
+          let books = this.carts
+          let map = books.map(it => {
+            return {
+              bookId: it.book.id,
+              purchaseNum: it.purchaseNum
+            }
+          })
+          request.post(`/api/order/buy`, {
+            userId: this.userInfo.id,
+            addressId: this.addressId,
+            books: map
+          }).then(res => {
+            if (res.status === 200) {
+              let response = res.data
+              this.orderSn = response.orderSn
+              console.log(response.totalPrice)
+              this.alipayWap = response.response
+              setTimeout(() => {
+                if (!this.isPayed) {
+                  this.$nextTick(() => {
+                    this.$refs.alipay.children[0].submit()
+                  })
+                }
+              }, 1000)
+            } else {
+              to = 1
+              this.$message.error(res.message)
+            }
+          })
         }
-        if (to >= 0 && to < 3) {
+        if (to >= 0 && to < 4) {
           this.step = to
         }
       },
@@ -197,44 +230,21 @@
           path: '/shopping/cart'
         })
       },
-      modify (formName) {
-        this.$refs[formName].validate((valid) => {
-          if (valid) {
-            console.log('修改成功！')
-            this.$message({
-              showClose: true,
-              message: '修改成功！',
-              type: 'success',
-              center: true
-            })
-            this.editVisible = false
-          } else {
-            console.log('error!')
-            return false
-          }
-        })
-      },
-      toPay (e) {
-        if (this.carts.length === 0) {
-          this.$message({
-            showClose: true,
-            message: '无订单信息！',
-            type: 'warning',
-            center: true
-          })
-        } else {
-          this.$router.push({
-            path: '/shopping/pay',
-            query: {
-              User_name: e.ID,
-              User_tel: e.Phone,
-              User_address: e.Address
-            }
-          })
-        }
-      },
       getCurrentRow (num) {
         this.addressId = this.address[num].id
+      }
+    },
+    mounted () {
+      let step = this.$route.query.step
+      if (step === '4') {
+        this.orderSn = this.$route.query.out_trade_no
+        this.totalPrice = this.$route.query.total_amount
+        if ((typeof this.orderSn !== 'undefined' && this.orderSn !== '') &&
+          (typeof this.totalPrice !== 'undefined' && this.totalPrice !== 0)) {
+          request.get(`/api/alipay/notify?orderSn=${this.orderSn}`)
+          this.isPayed = true
+          this.step = 4
+        }
       }
     }
   }
@@ -267,13 +277,6 @@
     float: left;
   }
 
-  .settle .viewBox .title .submit {
-    width: 150px;
-    height: 50px;
-    border-radius: 0;
-    font-size: 16px;
-  }
-
   .settle .viewBox .back {
     width: 100px;
     border-radius: 0;
@@ -281,9 +284,8 @@
 
   .settle .viewBox .commodity {
     width: 80%;
-    margin: 0 auto;
     text-align: center;
-    margin-bottom: 10px;
+    margin: 0 auto 10px;
   }
 
   .settle .viewBox .commodity .cTitle {
@@ -317,21 +319,6 @@
     font-size: 22px;
     color: #303133;
     margin-bottom: 30px;
-  }
-
-  .settle .viewBox .orderInfo .left .info {
-    width: 90%;
-    height: 40px;
-    line-height: 40px;
-    font-size: 17px;
-    color: #606266;
-  }
-
-  .settle .viewBox .orderInfo .modify {
-    width: 100px;
-    height: 40px;
-    border-radius: 0;
-    font-size: 16px;
   }
 
   .settle .viewBox .settleFooter {

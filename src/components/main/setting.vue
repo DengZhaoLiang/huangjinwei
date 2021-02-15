@@ -103,8 +103,11 @@
             if (res.status === 200) {
               this.userInfo = res.data
               this.$cookies.set('userInfo', res.data)
-              this.$message.success('修改个人资料成功')
               this.password = ''
+              this.$message.success('修改个人资料成功')
+              setTimeout(() => {
+                window.location.reload()
+              }, 1000)
             } else {
               this.$message.error(res.message)
             }
