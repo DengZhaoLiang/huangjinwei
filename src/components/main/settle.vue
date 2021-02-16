@@ -290,35 +290,38 @@
       }
     },
     mounted () {
-      this.orderSn = this.$route.query.orderSn
-      this.totalPrice = this.$route.query.totalPrice
-      if ((typeof this.orderSn !== 'undefined' && this.orderSn !== '') &&
-        (typeof this.totalPrice !== 'undefined' && this.totalPrice !== 0)) {
-        this.step = 2
-        /* eslint-disable */
-        request.post(`/api/order/buy`, {
-          orderSn: this.orderSn,
-          totalPrice: this.totalPrice
-        }).then(res => {
-          if (res.status === 200) {
-            let response = res.data
-            this.orderSn = response.orderSn
-            console.log(response.totalPrice)
-            this.alipayWap = response.response
-            setTimeout(() => {
-              if (!this.isPayed) {
-                this.$nextTick(() => {
-                  this.$refs.alipay.children[0].submit()
-                })
-              }
-            }, 1000)
-          } else {
-            this.step = 1
-            this.$message.error(res.message)
-          }
-        })
+      let orderSn = this.$route.query.orderSn
+      let totalPrice = this.$route.query.totalPrice
+      if (orderSn && totalPrice) {
+        this.orderSn = orderSn
+        this.totalPrice = totalPrice
+        if ((typeof this.orderSn !== 'undefined' && this.orderSn !== '') &&
+          (typeof this.totalPrice !== 'undefined' && this.totalPrice !== 0)) {
+          this.step = 2
+          /* eslint-disable */
+          request.post(`/api/order/buy`, {
+            orderSn: this.orderSn,
+            totalPrice: this.totalPrice
+          }).then(res => {
+            if (res.status === 200) {
+              let response = res.data
+              this.orderSn = response.orderSn
+              console.log(response.totalPrice)
+              this.alipayWap = response.response
+              setTimeout(() => {
+                if (!this.isPayed) {
+                  this.$nextTick(() => {
+                    this.$refs.alipay.children[0].submit()
+                  })
+                }
+              }, 1000)
+            } else {
+              this.step = 1
+              this.$message.error(res.message)
+            }
+          })
+        }
       }
-
       let step = this.$route.query.step
       if (step === '4') {
         this.orderSn = this.$route.query.out_trade_no
