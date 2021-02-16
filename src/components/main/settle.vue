@@ -164,12 +164,12 @@
       let buy = this.$cookies.get('buyNow')
       if (buy) {
         this.carts.push(buy)
-      }
-
-      let carts = this.$cookies.get('carts') ? JSON.parse(this.$cookies.get('carts')) : []
-      if (carts.length !== 0) {
-        this.carts = carts
-        this.clearCarts = true
+      } else {
+        let carts = this.$cookies.get('carts') ? JSON.parse(this.$cookies.get('carts')) : []
+        if (carts.length !== 0) {
+          this.carts = carts
+          this.clearCarts = true
+        }
       }
       console.log(this.carts)
 
