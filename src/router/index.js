@@ -11,7 +11,6 @@ import category from '@/components/main/category'
 import bookInfo from '@/components/main/bookInfo'
 import cart from '@/components/main/cart'
 import settle from '@/components/main/settle'
-import pay from '@/components/main/pay'
 import order from '@/components/main/order'
 import permission from '@/components/main/403'
 import notFound from '@/components/main/404'
@@ -83,15 +82,6 @@ export default new Router({
           component: settle,
           meta: {
             title: '确认订单',
-            permission: true
-          }
-        },
-        {
-          path: '/shopping/pay',
-          name: 'pay',
-          component: pay,
-          meta: {
-            title: '在线支付',
             permission: true
           }
         },

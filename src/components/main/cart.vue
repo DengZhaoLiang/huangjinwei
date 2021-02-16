@@ -13,8 +13,8 @@
     </el-row>
     <div class="cart_line"></div>
 
-    <div v-if="this.cart[0]">
-      <div class="list">
+    <div>
+      <div :style="this.carts.length < 3 ? 'height: 455px' : ''" class="list" v-if="this.carts.length !== 0">
         <el-row align="middle" type="flex">
           <el-col :span="3" class="title">商品图片</el-col>
           <el-col :span="9" class="title">商品名称</el-col>
@@ -24,38 +24,38 @@
           <el-col :span="3" class="title">操作</el-col>
         </el-row>
 
-        <div :key="index" v-for="(book, index) in cart">
+        <div :key="index" v-for="(cart, index) in carts">
           <el-row align="middle" type="flex">
             <el-col :span="3" class="bookRow">
-              <img :src="'https://www.xiaoqw.online/smallFrog-bookstore/img/' + book.book_Img" alt="" class="bookImg">
+              <img :src="cart.book.image" alt="" class="bookImg">
             </el-col>
-            <el-col :span="9" class="bookRow">{{ book.book_Name }}</el-col>
-            <el-col :span="3" class="bookRow">{{ book.unit_Price }}</el-col>
-            <el-col :span="3" class="bookRow">{{ book.count }}</el-col>
-            <el-col :span="3" class="bookRow">{{ book.unit_Price * book.count }}</el-col>
+            <el-col :span="9" class="bookRow">{{ cart.book.name }}</el-col>
+            <el-col :span="3" class="bookRow">{{ cart.book.price }}</el-col>
+            <el-col :span="3" class="bookRow">{{ cart.purchaseNum }}</el-col>
+            <el-col :span="3" class="bookRow">{{ cart.book.price * cart.purchaseNum }}</el-col>
             <el-col :span="3" class="bookRow">
-              <el-button @click="cartDelete(book)" circle icon="el-icon-delete" type="danger"></el-button>
+              <el-button @click="cartDelete(cart.book, index)" circle icon="el-icon-delete" type="danger"></el-button>
+            </el-col>
+          </el-row>
+        </div>
+
+        <div class="summary">
+          <el-row align="middle" type="flex">
+            <el-col :span="6">
+              <div class="number">共 {{ count }} 件商品</div>
+            </el-col>
+            <el-col :span="14">
+              <div class="price">合计（不含运费）：{{ totalPrice }} 元</div>
+            </el-col>
+            <el-col :span="4" class="settlement">
+              <div @click="toSettle()">结算</div>
             </el-col>
           </el-row>
         </div>
       </div>
-
-      <div class="summary">
-        <el-row align="middle" type="flex">
-          <el-col :span="6">
-            <div class="number">共 {{ count }} 件商品</div>
-          </el-col>
-          <el-col :span="14">
-            <div class="price">合计（不含运费）：{{ totalPrice }} 元</div>
-          </el-col>
-          <el-col :span="4" class="settlement">
-            <div @click="toSettle()">结算</div>
-          </el-col>
-        </el-row>
-      </div>
     </div>
 
-    <div v-if="!this.cart[0]">
+    <div style="height: 455px" v-if="this.carts.length === 0">
       <div class="list">
         <el-row align="middle" type="flex">
           <el-col :span="3" class="title">商品图片</el-col>
@@ -89,75 +89,45 @@
 </template>
 
 <script>
-  import axios from 'axios'
 
   export default {
     inject: ['reload'],
     data () {
       return {
-        cart: [],
+        carts: [],
         count: 0,
         totalPrice: 0
       }
     },
     created () {
-      const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/userCart.php'
-      const userId = this.$cookies.get('userInfo').id
-      let count = 0
-      let totalPrice = 0
-
-      axios.post(address, userId).then(res => {
-        this.cart = res.data // 获取数据
-        console.log('success')
-        console.log(this.cart)
-
-        for (let i = 0; i < this.cart.length; i++) {
-          count += parseFloat(this.cart[i].count)
-          totalPrice += parseFloat(this.cart[i].unit_Price * this.cart[i].count)
-        }
-        this.count = count
-        this.totalPrice = totalPrice
+      // 获取购物车数据
+      let carts = this.$cookies.get('carts') ? JSON.parse(this.$cookies.get('carts')) : []
+      console.log(carts)
+      this.carts = carts
+      // 计算商品数量已经总价格
+      this.count = this.carts.length
+      let total = 0
+      carts.forEach(cart => {
+        total += cart.book.price * cart.purchaseNum
       })
+      this.totalPrice = total
     },
     methods: {
-      cartDelete (e) {
-        const address = 'https://www.xiaoqw.online/smallFrog-bookstore/server/cartDelete.php'
-
-        axios.post(address, {
-          user_ID: e.user_ID,
-          book_ID: e.book_ID
-        }).then(() => {
-          console.log('删除成功')
-          this.$message({
-            showClose: true,
-            message: '删除成功！',
-            type: 'success',
-            center: true
-          })
-          this.reload()
-          // let res = response.data;
-          // if (res.status == '1') {
-          //     console.log('删除成功');
-          //     this.$message({
-          //         showClose: true,
-          //         message: '删除成功！',
-          //         type: 'success',
-          //         center: true
-          //     });
-          //     this.reload();
-          // } else {
-          //     console.log('删除失败！');
-          //     this.$message({
-          //         showClose: true,
-          //         message: '删除失败！',
-          //         type: 'error',
-          //         center: true
-          //     });
-          // }
+      cartDelete (book, index) {
+        let carts = this.carts
+        carts.splice(index, 1)
+        this.$cookies.set('carts', JSON.stringify(carts))
+        console.log('删除成功')
+        this.$message({
+          showClose: true,
+          message: '删除成功！',
+          type: 'success',
+          center: true
         })
+        this.reload()
       },
       toSettle () {
-        if (!this.cart[0]) {
+        if (this.carts.length === 0) {
           this.$message({
             showClose: true,
             message: '购物车里还没有商品噢！',
@@ -166,10 +136,7 @@
           })
         } else {
           this.$router.push({
-            path: '/shopping/settle',
-            query: {
-              cart: this.cart
-            }
+            path: '/shopping/settle'
           })
         }
       }

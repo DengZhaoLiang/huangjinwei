@@ -1,5 +1,5 @@
 <template>
-  <div style="margin: 0 20% 0 20%">
+  <div style="margin: 0 20% 0 20%; height: 600px">
     <el-tabs @tab-click="handleClick" v-model="activeName">
       <el-tab-pane label="我的信息" name="first">
         <el-form :model="userInfo" label-width="80px" ref="form">

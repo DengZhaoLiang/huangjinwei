@@ -52,13 +52,12 @@
             <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
               <div class="postage">商品总额：{{ totalPrice }} 元</div>
-              <div class="postage">运费：包邮</div>
               <div class="payPrice">应付金额：{{ totalPrice }} 元</div>
             </div>
           </div>
         </div>
 
-        <div style="height: 335px" v-if="address.length !== 0 && step === 1">
+        <div style="height: 335px" v-if="address.length !== 0 && step === 1 && !addAddress">
           <div class="left">
             <template>
               <el-table :data="address" style="width: 100%">
@@ -87,24 +86,43 @@
             <div class="leftImg"><img alt="" class="settleImg" src="../../../static/orderConfirm.png"></div>
             <div class="total">
               <div class="postage">商品总额：0 元</div>
-              <div class="postage">运费：包邮</div>
               <div class="payPrice">应付金额：0 元</div>
             </div>
           </div>
         </div>
 
-        <div class="orderInfo" style="height: 335px" v-if="address.length === 0 && step === 1">
+        <div class="orderInfo" style="height: 165px" v-if="address.length === 0 && step === 1 && !addAddress">
           <div class="left">
             <div class="infoTitle">收货地址：无</div>
           </div>
         </div>
 
-        <div v-if="step === 2">
+        <el-button @click="insertAddress()" style="float: right" type="primary" v-if="step === 1 && !addAddress">新增地址
+        </el-button>
+        <div v-if="addAddress">
+          <el-form :model="addressTable" label-width="80px">
+            <el-form-item label="姓名">
+              <el-input v-model="addressTable.name"></el-input>
+            </el-form-item>
+            <el-form-item label="电话">
+              <el-input type="number" v-model="addressTable.phone"></el-input>
+            </el-form-item>
+            <el-form-item label="地址">
+              <el-input v-model="addressTable.detail"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button @click="onSubmit" type="primary">立即创建</el-button>
+              <el-button @click="onCancel">取消</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <div style="height: 335px" v-if="step === 2">
           <div ref="alipay" v-html="alipayWap" v-show="false"></div>
         </div>
 
         <div v-if="step === 4">
-          <c-order-success :is-payed='isPayed' :order-id='orderSn' :total-amount='totalPrice'/>
+          <c-order-success :is-payed='isPayed' :order-id='this.orderSn' :total-amount='this.totalPrice'/>
         </div>
 
       </div>
@@ -134,7 +152,10 @@
         addressId: '',
         alipayWap: '',
         orderSn: '',
-        isPayed: false
+        isPayed: false,
+        clearCarts: false,
+        addAddress: false,
+        addressTable: {}
       }
     },
     created () {
@@ -143,6 +164,12 @@
       let buy = this.$cookies.get('buyNow')
       if (buy) {
         this.carts.push(buy)
+      }
+
+      let carts = this.$cookies.get('carts') ? JSON.parse(this.$cookies.get('carts')) : []
+      if (carts.length !== 0) {
+        this.carts = carts
+        this.clearCarts = true
       }
       console.log(this.carts)
 
@@ -204,6 +231,9 @@
             books: map
           }).then(res => {
             if (res.status === 200) {
+              if (this.clearCarts) {
+                this.$cookies.remove('carts')
+              }
               let response = res.data
               this.orderSn = response.orderSn
               console.log(response.totalPrice)
@@ -232,9 +262,63 @@
       },
       getCurrentRow (num) {
         this.addressId = this.address[num].id
+      },
+      // 新增地址
+      insertAddress () {
+        this.addAddress = true
+      },
+      onSubmit () {
+        this.addressTable.userId = this.userInfo.id
+        request.post(`/api/address`, this.addressTable)
+          .then(res => {
+            if (res.status === 200) {
+              this.$message.success('新增地址成功')
+              this.addAddress = false
+              request.get(`/api/address/user/${this.userInfo.id}`)
+                .then(res => {
+                  if (res.status === 200) {
+                    this.address = res.data
+                  } else {
+                    this.$message.error(res.message)
+                  }
+                })
+            }
+          })
+      },
+      onCancel () {
+        this.addAddress = false
       }
     },
     mounted () {
+      this.orderSn = this.$route.query.orderSn
+      this.totalPrice = this.$route.query.totalPrice
+      if ((typeof this.orderSn !== 'undefined' && this.orderSn !== '') &&
+        (typeof this.totalPrice !== 'undefined' && this.totalPrice !== 0)) {
+        this.step = 2
+        /* eslint-disable */
+        request.post(`/api/order/buy`, {
+          orderSn: this.orderSn,
+          totalPrice: this.totalPrice
+        }).then(res => {
+          if (res.status === 200) {
+            let response = res.data
+            this.orderSn = response.orderSn
+            console.log(response.totalPrice)
+            this.alipayWap = response.response
+            setTimeout(() => {
+              if (!this.isPayed) {
+                this.$nextTick(() => {
+                  this.$refs.alipay.children[0].submit()
+                })
+              }
+            }, 1000)
+          } else {
+            this.step = 1
+            this.$message.error(res.message)
+          }
+        })
+      }
+
       let step = this.$route.query.step
       if (step === '4') {
         this.orderSn = this.$route.query.out_trade_no
@@ -243,9 +327,14 @@
           (typeof this.totalPrice !== 'undefined' && this.totalPrice !== 0)) {
           request.get(`/api/alipay/notify?orderSn=${this.orderSn}`)
           this.isPayed = true
-          this.step = 4
+          setTimeout(() => {
+            this.step = 4
+          }, 500)
         }
       }
+    },
+    beforeDestroy () {
+      this.$cookies.remove('buyNow')
     }
   }
 </script>
